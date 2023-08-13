@@ -16,6 +16,7 @@ class TextModule:
         self.screen_height = screen_height
         self.screen = screen
         self.text_surface = None
+        
         self.participant_code = None
         self.participant_age = None
 
@@ -96,7 +97,7 @@ class menuPre:
                 self.age_screen()
 
             elif self.gamestate == 'test1': # begin test1
-                app = stroopTest1(self.screen, self.screen.get_width(), self.screen.get_height())
+                app = stroopTest1(self.screen, self.screen.get_width(), self.screen.get_height(), self.participant_code, self.participant_age)
                 app.run()
 
             pygame.display.flip()

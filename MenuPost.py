@@ -1,10 +1,21 @@
+from operator import index
 import pygame
 import os
 from datetime import datetime
 import sys
 import pygame_textinput
+import pandas as pd
 
 from StroopTest1 import stroopTest1
+
+########################################################################################################################
+
+# Absolute path:
+actual_dir= os.path.abspath(os.path.dirname(__file__))
+excel_file = 'registros.xlsx'
+path_excel_file = os.path.join(actual_dir, excel_file) # excel file relative path
+df = pd.read_excel(path_excel_file)
+code_options = list(df['codigo']) # possible code options for the dropdown menu
 
 ########################################################################################################################
 
@@ -60,6 +71,7 @@ class menuPost:
     # participant code
     def login_screen(self):
         self.screen.fill((255, 255, 255))
+
         if self.selected_code: # writes selected_code
             pygame.draw.rect(self.screen, pygame.Color(0,0,0), self.rect, 4)
             font = pygame.font.Font(None, 40)
@@ -68,7 +80,7 @@ class menuPost:
             self.screen.blit(code_text, code_rect)
         else: # selected_code == None
             pygame.draw.rect(self.screen, pygame.Color(0,0,0), self.rect, 4)
-        code_options = ["Code 1", "Code 2", "Code 3", "Code 4", "Code 5", "Code 6", "Code 7"] # possible code options for the dropdown menu
+
         dropdown_rect = pygame.Rect(self.screen.get_width()/2-290, self.screen.get_height()/2-100, 580, 30)
         font = pygame.font.Font(None, 24)
         for idx, option in enumerate(code_options):
@@ -82,6 +94,7 @@ class menuPost:
             if option_rect.collidepoint(pygame.mouse.get_pos()): # Dropdown interaction: detects clicks and updates the selected option
                 if pygame.mouse.get_pressed()[0]:  # mouse click on code option
                     self.selected_code = option # updates the selected option
+
         self.text_module.show_message("Seleccione el código del sujeto", big_font=False, no_bkg=True)
 
     # participant age 
@@ -119,7 +132,7 @@ class menuPost:
                 self.age_screen()
 
             elif self.gamestate == 'test1': # begin test1
-                app = stroopTest1(self.screen, self.screen.get_width(), self.screen.get_height())
+                app = stroopTest1(self.screen, self.screen.get_width(), self.screen.get_height(), self.participant_code, self.participant_age)
                 app.run()
                 
             pygame.display.flip()

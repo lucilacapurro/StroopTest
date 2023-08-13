@@ -14,7 +14,7 @@ path_alarm_file = os.path.join(actual_dir, alarm_file) # alarm wav sound file re
 ########################################################################################################################
 
 class stroopTest3:
-    def __init__(self, screen, screen_width, screen_height):
+    def __init__(self, screen, screen_width, screen_height, participant_code, participant_age):
         self.screen = screen
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -33,9 +33,13 @@ class stroopTest3:
         self.test_ended = False
         self.show_message = False
         self.score = None
-        self.PCscore = None
         self.selected_button = None
         self.selected_x2 = False
+        self.PCscore = None
+        if participant_age < 65: 
+            self.age_correction = 5 # age correction for PC score for < 65 adults 
+        else:
+            self.age_correction = 15 # age correction for PC score for >= 65 adults 
         self.selected_save = False
         pygame.mixer.init()
         self.alarm_sound = pygame.mixer.Sound(path_alarm_file)  # alarm sound
@@ -211,7 +215,7 @@ class stroopTest3:
                                 text_rect = text_surface.get_rect(center=(self.screen_width // 2, 150))
                                 self.screen.blit(text_surface, text_rect)
                                 pygame.display.flip()
-                                pygame.time.wait(4000)  # Wait for 2 seconds to show the message
+                                pygame.time.wait(4000)  # Waits for 4 seconds to show the message
                                 sys.exit()
 
             if self.clock_running:
