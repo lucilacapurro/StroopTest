@@ -52,7 +52,7 @@ class stroopTest3:
         self.participant_code = test_data[0]
         self.participant_age = test_data[1]
 
-        self.initial_time = 1  # countdown begins at 45 secs
+        self.initial_time = 5  # countdown begins at 45 secs
         self.elapsed_time = 0
         self.clock_running = False
         self.running = False
@@ -244,23 +244,39 @@ class stroopTest3:
                                     self.test_data.append(self.PCscore + self.age_correction)
 
                                     # TP score 
-                                    self.TPCscore = df_baremoPC.loc[df_baremoPC['PC'] == int(self.PCscore + self.age_correction), 'TPC'].values[0]
-                                    print("Puntaje TPC:", self.TPCscore)
+                                    try: 
+                                        self.TPCscore = df_baremoPC.loc[df_baremoPC['PC'] == int(self.PCscore + self.age_correction), 'TPC'].values[0]
+                                        print("Puntaje TPC:", self.TPCscore)
+                                    except: 
+                                        self.TPCscore = "-"
+                                        print("El puntaje TPC no pudo ser calculado porque no se encontró el valor PC en el baremo.")
                                     self.test_data.append(self.TPCscore)
 
                                     # PC'
-                                    PCestimated = round((self.test_data[3] * self.test_data[6]) / (self.test_data[3] + self.test_data[6]), 1) # PC' = (Pcorregido * Ccorregido) / (Pcorregido + Ccorregido)
-                                    print("PC':", PCestimated)
+                                    try:
+                                        PCestimated = round((self.test_data[3] * self.test_data[6]) / (self.test_data[3] + self.test_data[6]), 1) # PC' = (Pcorregido * Ccorregido) / (Pcorregido + Ccorregido)
+                                        print("PC':", PCestimated)
+                                    except: 
+                                        PCestimated = "-"
+                                        print("PC' no pudo ser calculado porque alguno de los puntajes P o C no pudo ser calculado correctamente:", PCestimated)
                                     self.test_data.append(PCestimated)
 
                                     # I score
-                                    Iscore = round(self.test_data[9] - PCestimated, 1) # I = real - estimated = PCcorregido - PC' 
-                                    print("Puntaje I:", Iscore)
+                                    try: 
+                                        Iscore = round(self.test_data[9] - PCestimated, 1) # I = real - estimated = PCcorregido - PC' 
+                                        print("Puntaje I:", Iscore)
+                                    except: 
+                                        Iscore = "-"
+                                        print("El puntaje I no pudo ser calculado porque no se pudo calcular el valor de TPC.")
                                     self.test_data.append(Iscore)
 
                                     # TI score
-                                    TIscore = df_baremoI.loc[df_baremoI['I'] == int(Iscore), 'TI'].values[0]
-                                    print("Puntaje TI:", TIscore)
+                                    try: 
+                                        TIscore = df_baremoI.loc[df_baremoI['I'] == int(Iscore), 'TI'].values[0]
+                                        print("Puntaje TI:", TIscore)
+                                    except: 
+                                        TIscore = "-"
+                                        print("El puntaje TI no pudo ser calculado porque no se encontró el valor I en el baremo.")
                                     self.test_data.append(TIscore)
 
                                     # Saves the data 
@@ -311,28 +327,43 @@ class stroopTest3:
                                         participant_data.extend(self.test_data[2:])
 
                                         # compares PRE and POST values 
-                                        Pdif = participant_data[14] - participant_data[2] # Pdif = Ppost - Ppre
-                                        participant_data.append(Pdif)
-                                        if Pdif < 10:
-                                            Psig = 0 
-                                        else:
-                                            Psig = 1 # significant difference
+                                        # P
+                                        try:
+                                            Pdif = participant_data[14] - participant_data[2] # Pdif = Ppost - Ppre
+                                            participant_data.append(Pdif)
+                                            if Pdif < 10:
+                                                Psig = 0 
+                                            else:
+                                                Psig = 1 # significant difference
+                                        except: 
+                                            Pdif = "-"
+                                            Psig = "-"
                                         participant_data.append(Psig)
 
-                                        Cdif = participant_data[17] - participant_data[5] # Cdif = Cpost - Cpre
-                                        participant_data.append(Cdif)
-                                        if Cdif < 10:
-                                            Csig = 0
-                                        else:
-                                            Csig = 1 # significant difference
-                                        participant_data.append(Csig)
+                                        # C
+                                        try: 
+                                            Cdif = participant_data[17] - participant_data[5] # Cdif = Cpost - Cpre
+                                            participant_data.append(Cdif)
+                                            if Cdif < 10:
+                                                Csig = 0
+                                            else:
+                                                Csig = 1 # significant difference
+                                        except: 
+                                            Cdif = "-"
+                                            Csig = "-"                           
+                                        participant_data.append(Csig)                 
 
-                                        PCdif = participant_data[20] - participant_data[8] # PCdif = PCpost - PCpre
-                                        participant_data.append(PCdif)
-                                        if PCdif < 10:
-                                            PCsig = 0
-                                        else:
-                                            PCsig = 1 # significant difference
+                                        # PC
+                                        try:
+                                            PCdif = participant_data[20] - participant_data[8] # PCdif = PCpost - PCpre
+                                            participant_data.append(PCdif)
+                                            if PCdif < 10:
+                                                PCsig = 0
+                                            else:
+                                                PCsig = 1 # significant difference
+                                        except:
+                                            PCdif = "-"
+                                            PCsig = "-"
                                         participant_data.append(PCsig)
 
                                         '''

@@ -8,6 +8,15 @@ from StroopTest1 import stroopTest1
 
 ########################################################################################################################
 
+# Absolute path:
+actual_dir= os.path.abspath(os.path.dirname(__file__))
+excel_file = 'RegistrosPRE.xlsx'
+path_excel_file = os.path.join(actual_dir, excel_file) # excel file relative path
+df = pd.read_excel(path_excel_file)
+unavailable_codes = list(df['codigo']) # previously registered codes not available for a new register
+
+########################################################################################################################
+
 class TextModule:
     def __init__(self,screen, screen_width, screen_height):
         self.font = pygame.font.SysFont(None, 90)
@@ -82,10 +91,23 @@ class menuPre:
                         self.running = False
                         sys.exit()
                     if event.key == pygame.K_RETURN: # ENTER
+                        # code input
                         if self.gamestate == 'login' and len(self.textinput.value) > 0: # ENTER to input the participant's code
-                            self.participant_code = self.textinput.value # saves the code
-                            self.textinput.value = ""  # Clear the text input value
-                            self.gamestate = 'age' # after the code input, the age is requested
+                            # checks the code not being already registered 
+                            if str(self.textinput.value) in unavailable_codes: # is already registered 
+                                self.show_message = False
+                                font = pygame.font.SysFont(None, 30)
+                                message_text = "Este código ya ha sido ingresado previamente, ingrese uno diferente."
+                                text_surface = font.render(message_text, True, (255, 0, 0))
+                                text_rect = text_surface.get_rect(center=(self.screen.get_width() // 2, self.screen.get_height()/2))
+                                self.screen.blit(text_surface, text_rect)
+                                pygame.display.flip()
+                                pygame.time.wait(2000) 
+                            else: # not already registered
+                                self.participant_code = self.textinput.value # saves the code
+                                self.textinput.value = ""  # Clear the text input value
+                                self.gamestate = 'age' # after the code input, the age is requested
+                        # age input
                         if self.gamestate == 'age' and len(self.textinput.value) > 0: # ENTER to input the participant's age
                             self.participant_age = int(self.textinput.value)
                             self.gamestate = 'test1' # after the age input, starts the test

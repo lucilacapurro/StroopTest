@@ -41,7 +41,7 @@ class stroopTest1:
         self.participant_code = participant_code
         self.participant_age = participant_age
 
-        self.initial_time = 1  # countdown begins at 45 secs
+        self.initial_time = 5  # countdown begins at 45 secs
         self.elapsed_time = 0
         self.clock_running = False
         self.running = False
@@ -210,8 +210,12 @@ class stroopTest1:
                                     self.test_data.append(self.Pscore + self.age_correction)
 
                                     # TP score 
-                                    self.TPscore = df_baremoP.loc[df_baremoP['P'] == int(self.Pscore + self.age_correction), 'TP'].values[0]
-                                    print("Puntaje TP:", self.TPscore)
+                                    try:
+                                        self.TPscore = df_baremoP.loc[df_baremoP['P'] == int(self.Pscore + self.age_correction), 'TP'].values[0]
+                                        print("Puntaje TP:", self.TPscore)
+                                    except: 
+                                        self.TPscore = "-"
+                                        print("El puntaje TP no pudo ser calculado porque no se encontró el valor P en el baremo.")
                                     self.test_data.append(self.TPscore)
 
                                     app = stroopTest2(self.screen, self.screen.get_width(), self.screen.get_height(), self.current_test, self.test_data)
