@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *
 import time
 import os
+import pandas as pd 
 
 from StroopTest2 import stroopTest2
 
@@ -9,13 +10,22 @@ from StroopTest2 import stroopTest2
 
 # Absolute path:
 actual_dir= os.path.abspath(os.path.dirname(__file__))
+
+# Alarm file path
 alarm_file = 'alarm_beep.wav'
 path_alarm_file = os.path.join(actual_dir, alarm_file) # alarm wav sound file relative path
+
+# Baremo file path
+baremo_file = 'Baremo.xlsx'
+path_baremo_file = os.path.join(actual_dir, baremo_file) # baremo file relative path
+# Baremo P
+Psheet = "P"
+df_baremoP = pd.read_excel(path_baremo_file, sheet_name=Psheet) 
 
 ########################################################################################################################
 
 class stroopTest1:
-    def __init__(self, screen, screen_width, screen_height, participant_code, participant_age):
+    def __init__(self, screen, screen_width, screen_height, TEST, participant_code, participant_age):
         self.screen = screen
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -27,6 +37,10 @@ class stroopTest1:
         self.button_padding_y = 30
         self.buttons = []
 
+        self.current_test = TEST # PRE or POST 
+        self.participant_code = participant_code
+        self.participant_age = participant_age
+
         self.initial_time = 1  # countdown begins at 45 secs
         self.elapsed_time = 0
         self.clock_running = False
@@ -37,11 +51,14 @@ class stroopTest1:
         self.selected_button = None
         self.selected_x2 = False
         self.Pscore = None
-        if participant_age < 65:
+        if int(participant_age) < 65:
             self.age_correction = 8 # age correction for P score for < 65 adults 
         else:
             self.age_correction = 14 # age correction for P score for >= 65 adults 
+        self.TPscore = None
+        self.test_data = [participant_code, participant_age]
         self.selected_save = False
+
         pygame.mixer.init()
         self.alarm_sound = pygame.mixer.Sound(path_alarm_file)  # alarm sound
 
@@ -182,9 +199,22 @@ class stroopTest1:
                                     self.Pscore = int(self.score) + 100 # calculates the P score
                                 else:
                                     self.Pscore = int(self.score)
-                                print("P score:", self.Pscore)
+
                                 if self.selected_save:
-                                    app = stroopTest2(self.screen, self.screen.get_width(), self.screen.get_height(), self.participant_code, self.participant_age)
+                                    # raw P score 
+                                    print("Puntaje P:", self.Pscore)
+                                    self.test_data.append(self.Pscore)
+
+                                    # age correction
+                                    print("P corregido por edad:", self.Pscore + self.age_correction)
+                                    self.test_data.append(self.Pscore + self.age_correction)
+
+                                    # TP score 
+                                    self.TPscore = df_baremoP.loc[df_baremoP['P'] == int(self.Pscore + self.age_correction), 'TP'].values[0]
+                                    print("Puntaje TP:", self.TPscore)
+                                    self.test_data.append(self.TPscore)
+
+                                    app = stroopTest2(self.screen, self.screen.get_width(), self.screen.get_height(), self.current_test, self.test_data)
                                     app.run()
 
             if self.clock_running:

@@ -12,7 +12,7 @@ from StroopTest1 import stroopTest1
 
 # Absolute path:
 actual_dir= os.path.abspath(os.path.dirname(__file__))
-excel_file = 'registros.xlsx'
+excel_file = 'RegistrosPRE.xlsx'
 path_excel_file = os.path.join(actual_dir, excel_file) # excel file relative path
 df = pd.read_excel(path_excel_file)
 code_options = list(df['codigo']) # possible code options for the dropdown menu
@@ -132,7 +132,7 @@ class menuPost:
                 self.age_screen()
 
             elif self.gamestate == 'test1': # begin test1
-                app = stroopTest1(self.screen, self.screen.get_width(), self.screen.get_height(), self.participant_code, self.participant_age)
+                app = stroopTest1(self.screen, self.screen.get_width(), self.screen.get_height(), "POST", self.participant_code, self.participant_age)
                 app.run()
                 
             pygame.display.flip()

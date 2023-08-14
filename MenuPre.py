@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import sys
 import pygame_textinput
-
+import pandas as pd
 from StroopTest1 import stroopTest1
 
 ########################################################################################################################
@@ -87,7 +87,7 @@ class menuPre:
                             self.textinput.value = ""  # Clear the text input value
                             self.gamestate = 'age' # after the code input, the age is requested
                         if self.gamestate == 'age' and len(self.textinput.value) > 0: # ENTER to input the participant's age
-                            self.participant_age = self.textinput.value
+                            self.participant_age = int(self.textinput.value)
                             self.gamestate = 'test1' # after the age input, starts the test
 
             if self.gamestate == 'login': # participant code request
@@ -97,7 +97,7 @@ class menuPre:
                 self.age_screen()
 
             elif self.gamestate == 'test1': # begin test1
-                app = stroopTest1(self.screen, self.screen.get_width(), self.screen.get_height(), self.participant_code, self.participant_age)
+                app = stroopTest1(self.screen, self.screen.get_width(), self.screen.get_height(), "PRE", self.participant_code, self.participant_age)
                 app.run()
 
             pygame.display.flip()

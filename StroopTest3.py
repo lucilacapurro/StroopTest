@@ -2,19 +2,41 @@ import pygame
 from pygame.locals import *
 import time
 import os
+import pandas as pd
+from openpyxl import load_workbook
 import sys
 
 ########################################################################################################################
 
 # Absolute path:
 actual_dir= os.path.abspath(os.path.dirname(__file__))
+
+# Alarm file path
 alarm_file = 'alarm_beep.wav'
 path_alarm_file = os.path.join(actual_dir, alarm_file) # alarm wav sound file relative path
+
+# Baremo file path
+baremo_file = 'Baremo.xlsx'
+path_baremo_file = os.path.join(actual_dir, baremo_file) # baremo file relative path
+# Baremo PC
+PCsheet = "PC"
+df_baremoPC = pd.read_excel(path_baremo_file, sheet_name=PCsheet)
+# Baremo I
+Isheet = "I" 
+df_baremoI = pd.read_excel(path_baremo_file, sheet_name=Isheet) 
+
+# PRE Registers file path:
+PRE_excel_file = 'RegistrosPRE.xlsx'
+path_PRE_excel_file = os.path.join(actual_dir, PRE_excel_file) # PRE registers excel file relative path
+
+# POST Registers file path:
+POST_excel_file = 'RegistrosPOST.xlsx'
+path_POST_excel_file = os.path.join(actual_dir, POST_excel_file) # POST registers excel file relative path
 
 ########################################################################################################################
 
 class stroopTest3:
-    def __init__(self, screen, screen_width, screen_height, participant_code, participant_age):
+    def __init__(self, screen, screen_width, screen_height, TEST, test_data):
         self.screen = screen
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -26,6 +48,10 @@ class stroopTest3:
         self.button_padding_y = 30
         self.buttons = []
 
+        self.current_test = TEST # PRE or POST 
+        self.participant_code = test_data[0]
+        self.participant_age = test_data[1]
+
         self.initial_time = 1  # countdown begins at 45 secs
         self.elapsed_time = 0
         self.clock_running = False
@@ -36,11 +62,14 @@ class stroopTest3:
         self.selected_button = None
         self.selected_x2 = False
         self.PCscore = None
-        if participant_age < 65: 
+        if int(self.participant_age) < 65: 
             self.age_correction = 5 # age correction for PC score for < 65 adults 
         else:
             self.age_correction = 15 # age correction for PC score for >= 65 adults 
+        self.TPCscore = None
+        self.test_data = test_data
         self.selected_save = False
+
         pygame.mixer.init()
         self.alarm_sound = pygame.mixer.Sound(path_alarm_file)  # alarm sound
 
@@ -155,7 +184,6 @@ class stroopTest3:
             text_rect = text_surface.get_rect(center=(self.screen_width // 2, 120))
             self.screen.blit(text_surface, text_rect)
 
-
         pygame.display.flip()
 
 
@@ -205,18 +233,172 @@ class stroopTest3:
                                     self.PCscore = int(self.score) + 100 # calculates the P score
                                 else:
                                     self.PCscore = int(self.score)
-                                print("PC score:", self.PCscore)
 
-                                self.show_message = False
-                                self.screen.fill((255, 255, 255))  # Fill the screen with white color to clear the content
-                                font = pygame.font.SysFont(None, 30)
-                                message_text = "Fin del test. Los datos fueron guardados. A continuación se cerrará el programa"
-                                text_surface = font.render(message_text, True, (0, 0, 0))  # Green color for success
-                                text_rect = text_surface.get_rect(center=(self.screen_width // 2, 150))
-                                self.screen.blit(text_surface, text_rect)
-                                pygame.display.flip()
-                                pygame.time.wait(4000)  # Waits for 4 seconds to show the message
-                                sys.exit()
+                                if self.selected_save:
+                                    # raw PC score 
+                                    print("Puntaje PC:", self.PCscore)
+                                    self.test_data.append(self.PCscore)
+
+                                    # age correction
+                                    print("PC corregido por edad:", self.PCscore + self.age_correction)
+                                    self.test_data.append(self.PCscore + self.age_correction)
+
+                                    # TP score 
+                                    self.TPCscore = df_baremoPC.loc[df_baremoPC['PC'] == int(self.PCscore + self.age_correction), 'TPC'].values[0]
+                                    print("Puntaje TPC:", self.TPCscore)
+                                    self.test_data.append(self.TPCscore)
+
+                                    # PC'
+                                    PCestimated = round((self.test_data[3] * self.test_data[6]) / (self.test_data[3] + self.test_data[6]), 1) # PC' = (Pcorregido * Ccorregido) / (Pcorregido + Ccorregido)
+                                    print("PC':", PCestimated)
+                                    self.test_data.append(PCestimated)
+
+                                    # I score
+                                    Iscore = round(self.test_data[9] - PCestimated, 1) # I = real - estimated = PCcorregido - PC' 
+                                    print("Puntaje I:", Iscore)
+                                    self.test_data.append(Iscore)
+
+                                    # TI score
+                                    TIscore = df_baremoI.loc[df_baremoI['I'] == int(Iscore), 'TI'].values[0]
+                                    print("Puntaje TI:", TIscore)
+                                    self.test_data.append(TIscore)
+
+                                    # Saves the data 
+
+                                    # PRE TEST CASE:
+                                    if self.current_test == "PRE":
+                                        '''
+                                        # participant's data 
+                                        "codigo": self.test_data[0], 
+                                        "edad": self.test_data[1], 
+                                        "P": self.test_data[2],
+                                        "Pcorregido": self.test_data[3],
+                                        "TP": self.test_data[4],
+                                        "C": self.test_data[5],
+                                        "Ccorregido": self.test_data[6],
+                                        "TC": self.test_data[7],
+                                        "PC": self.test_data[8],
+                                        "PCcorregido": self.test_data[9],
+                                        "TPC": self.test_data[10],
+                                        "PC'": self.test_data[11],
+                                        "I": self.test_data[12],
+                                        "TI": self.test_data[13] 
+                                        '''
+                                        # saves the data in the PRE register 
+                                        PRE_registers = load_workbook(path_PRE_excel_file)
+                                        PRE_registers_sheet = PRE_registers["Hoja1"]
+
+                                        # finds the first empty row
+                                        first_empty_row = None
+                                        for row in PRE_registers_sheet.iter_rows(min_row=1, max_row=PRE_registers_sheet.max_row):
+                                            if all(cell.value is None for cell in row):
+                                                first_empty_row = row[0].row
+                                                break
+                                        if first_empty_row is None:
+                                            first_empty_row = PRE_registers_sheet.max_row + 1
+                                        for cell, value in zip(PRE_registers_sheet[first_empty_row], self.test_data):
+                                            cell.value = value
+
+                                        PRE_registers.save(path_PRE_excel_file)
+
+                                    # POST TEST CASE: 
+                                    elif self.current_test == "POST":
+                                        # gets the participant's PRE data from the PRE register 
+                                        df_PRE_registers = pd.read_excel(path_PRE_excel_file)
+                                        participant_data = list(df_PRE_registers.loc[df_PRE_registers['codigo'] == str(self.test_data[0])].iloc[0])
+
+                                        # appends the participant's POST data
+                                        participant_data.extend(self.test_data[2:])
+
+                                        # compares PRE and POST values 
+                                        Pdif = participant_data[14] - participant_data[2] # Pdif = Ppost - Ppre
+                                        participant_data.append(Pdif)
+                                        if Pdif < 10:
+                                            Psig = 0 
+                                        else:
+                                            Psig = 1 # significant difference
+                                        participant_data.append(Psig)
+
+                                        Cdif = participant_data[17] - participant_data[5] # Cdif = Cpost - Cpre
+                                        participant_data.append(Cdif)
+                                        if Cdif < 10:
+                                            Csig = 0
+                                        else:
+                                            Csig = 1 # significant difference
+                                        participant_data.append(Csig)
+
+                                        PCdif = participant_data[20] - participant_data[8] # PCdif = PCpost - PCpre
+                                        participant_data.append(PCdif)
+                                        if PCdif < 10:
+                                            PCsig = 0
+                                        else:
+                                            PCsig = 1 # significant difference
+                                        participant_data.append(PCsig)
+
+                                        '''
+                                        # participant's data 
+                                        "SUJETO - codigo": participant_data[0], 
+                                        "SUJETO - edad": participant_data[1], 
+                                        "PRE - P": participant_data[2],
+                                        "PRE - Pcorregido": participant_data[3],
+                                        "PRE - TP": participant_data[4],
+                                        "PRE - C": participant_data[5],
+                                        "PRE - Ccorregido": participant_data[6],
+                                        "PRE - TC": participant_data[7],
+                                        "PRE - PC": participant_data[8],
+                                        "PRE - PCcorregido": participant_data[9],
+                                        "PRE - TPC": participant_data[10],
+                                        "PRE - PC'": participant_data[11],
+                                        "PRE - I": participant_data[12],
+                                        "PRE - TI": participant_data[13],
+                                        "POST - P": participant_data[14],
+                                        "POST - Pcorregido": participant_data[15],
+                                        "POST - TP": participant_data[16],
+                                        "POST - C": participant_data[17],
+                                        "POST - Ccorregido": participant_data[18],
+                                        "POST - TC": participant_data[19],
+                                        "POST - PC": participant_data[20],
+                                        "POST - PCcorregido": participant_data[21],
+                                        "POST - TPC": participant_data[22],
+                                        "POST - PC'": participant_data[23],
+                                        "POST - I": participant_data[24],
+                                        "POST - TI": participant_data[25],
+                                        "COMPARACION - DifP": participant_data[26],
+                                        "COMPARACION - SigP": participant_data[27],
+                                        "COMPARACION - DifC": participant_data[28],
+                                        "COMPARACION - SigC": participant_data[29],
+                                        "COMPARACION - DifPC": participant_data[30],
+                                        "COMPARACION - SigPC": participant_data[31]
+                                        '''
+                                        
+                                        # saves the data in the POST register 
+                                        POST_registers = load_workbook(path_POST_excel_file)
+                                        POST_registers_sheet = POST_registers["Hoja1"]
+
+                                        # finds the first empty row
+                                        first_empty_row = None
+                                        for row in POST_registers_sheet.iter_rows(min_row=1, max_row=POST_registers_sheet.max_row):
+                                            if all(cell.value is None for cell in row):
+                                                first_empty_row = row[0].row
+                                                break
+                                        if first_empty_row is None:
+                                            first_empty_row = POST_registers_sheet.max_row + 1
+                                        for cell, value in zip(POST_registers_sheet[first_empty_row], participant_data):
+                                            cell.value = value
+
+                                        POST_registers.save(path_POST_excel_file)
+
+                                    self.show_message = False
+                                    self.screen.fill((255, 255, 255))  # Fill the screen with white color to clear the content
+                                    font = pygame.font.SysFont(None, 30)
+                                    message_text = "Fin del test. Los datos fueron guardados. A continuación se cerrará el programa" # end of test message
+                                    text_surface = font.render(message_text, True, (0, 0, 0))  # Green color for success
+                                    text_rect = text_surface.get_rect(center=(self.screen_width // 2, 150))
+                                    self.screen.blit(text_surface, text_rect)
+                                    pygame.display.flip()
+                                    pygame.time.wait(4000)  # Waits for 4 seconds to show the message
+
+                                    sys.exit() # exits the program
 
             if self.clock_running:
                 self.elapsed_time = time.time() - self.start_time
@@ -230,3 +412,6 @@ class stroopTest3:
             self.clock.tick(60)
         
         pygame.display.flip()
+
+
+                

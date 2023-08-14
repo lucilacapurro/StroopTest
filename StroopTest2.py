@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *
 import time
 import os
+import pandas as pd 
 
 from StroopTest3 import stroopTest3
 
@@ -9,13 +10,22 @@ from StroopTest3 import stroopTest3
 
 # Absolute path:
 actual_dir= os.path.abspath(os.path.dirname(__file__))
+
+# Alarm file path
 alarm_file = 'alarm_beep.wav'
 path_alarm_file = os.path.join(actual_dir, alarm_file) # alarm wav sound file relative path
+
+# Baremo file path
+baremo_file = 'Baremo.xlsx'
+path_baremo_file = os.path.join(actual_dir, baremo_file) # baremo file relative path
+# Baremo C
+Csheet = "C"
+df_baremoC = pd.read_excel(path_baremo_file, sheet_name=Csheet) 
 
 ########################################################################################################################
 
 class stroopTest2:
-    def __init__(self, screen, screen_width, screen_height, participant_code, participant_age):
+    def __init__(self, screen, screen_width, screen_height, TEST, test_data):
         self.screen = screen
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -27,6 +37,10 @@ class stroopTest2:
         self.button_padding_y = 30
         self.buttons = []
 
+        self.current_test = TEST # PRE or POST 
+        self.participant_code = test_data[0]
+        self.participant_age = test_data[1]
+
         self.initial_time = 1  # countdown begins at 45 secs
         self.elapsed_time = 0
         self.clock_running = False
@@ -37,11 +51,14 @@ class stroopTest2:
         self.selected_button = None
         self.selected_x2 = False
         self.Cscore = None
-        if participant_age < 65:
+        if int(self.participant_age) < 65:
             self.age_correction = 4 # age correction for C score for < 65 adults 
         else:
             self.age_correction = 11 # age correction for C score for >= 65 adults 
+        self.TCscore = None
+        self.test_data = test_data
         self.selected_save = False
+        
         pygame.mixer.init()
         self.alarm_sound = pygame.mixer.Sound(path_alarm_file)  # alarm sound
 
@@ -187,11 +204,24 @@ class stroopTest2:
                                     self.Cscore = int(self.score) + 100 # calculates the P score
                                 else:
                                     self.Cscore = int(self.score)
-                                print("C score:", self.Cscore)
                                 if self.selected_save:
-                                    app = stroopTest3(self.screen, self.screen.get_width(), self.screen.get_height(), self.participant_code, self.participant_age)
+                                    # raw C score 
+                                    print("Puntaje C:", self.Cscore)
+                                    self.test_data.append(self.Cscore)
+
+                                    # age correction
+                                    print("C corregido por edad:", self.Cscore + self.age_correction)
+                                    self.test_data.append(self.Cscore + self.age_correction)
+
+                                    # TC score 
+                                    self.TCscore = df_baremoC.loc[df_baremoC['C'] == int(self.Cscore + self.age_correction), 'TC'].values[0]
+                                    print("Puntaje TC:", self.TCscore)
+                                    self.test_data.append(self.TCscore)
+                                    
+                                    app = stroopTest3(self.screen, self.screen.get_width(), self.screen.get_height(), self.current_test, self.test_data)
                                     app.run()
-                                
+
+
 
             if self.clock_running:
                 self.elapsed_time = time.time() - self.start_time
