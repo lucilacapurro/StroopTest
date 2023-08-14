@@ -12,10 +12,21 @@ from StroopTest1 import stroopTest1
 
 # Absolute path:
 actual_dir= os.path.abspath(os.path.dirname(__file__))
-excel_file = 'RegistrosPRE.xlsx'
-path_excel_file = os.path.join(actual_dir, excel_file) # excel file relative path
-df = pd.read_excel(path_excel_file)
-code_options = list(df['codigo']) # possible code options for the dropdown menu
+
+# Obtains codes from PRE register
+PRE_excel_file = 'RegistrosPRE.xlsx'
+path_PRE_excel_file = os.path.join(actual_dir, PRE_excel_file) # excel file relative path
+df_PRE = pd.read_excel(path_PRE_excel_file)
+PRE_codes = list(df_PRE['codigo']) # codes registered on the PRE register 
+
+# Obtains codes from POST register
+POST_excel_file = 'RegistrosPOST.xlsx'
+path_POST_excel_file = os.path.join(actual_dir, POST_excel_file) # excel file relative path
+df_POST = pd.read_excel(path_POST_excel_file, header=1)
+POST_codes = list(df_POST['codigo']) # codes registered on the POST register 
+
+# Obtains codes only registered on PRE register
+code_options = [code for code in PRE_codes if code not in POST_codes] # possible code options for the dropdown menu
 
 ########################################################################################################################
 
@@ -97,14 +108,6 @@ class menuPost:
 
         self.text_module.show_message("Seleccione el código del sujeto", big_font=False, no_bkg=True)
 
-    # participant age 
-    def age_screen(self):
-        self.screen.fill((255, 255, 255))
-        self.textinput.update(self.events)
-        self.screen.blit(self.textinput.surface, (self.screen.get_width()/2-270, self.screen.get_height()/2-140))
-        pygame.draw.rect(self.screen, pygame.Color(0,0,0), self.rect, 4)
-        self.text_module.show_message("Ingrese la edad del sujeto", big_font=False, no_bkg=True)
-
     def run(self):
         while self.running:
             self.events = pygame.event.get()
@@ -118,18 +121,12 @@ class menuPost:
                     if event.key == pygame.K_RETURN: # ENTER
                         if self.gamestate == 'login' and self.selected_code != None: # ENTER to input the selected code
                             self.participant_code = self.selected_code
-                            self.textinput.value = ""  # Clear the selected code
-                            self.selected_code = None
-                            self.gamestate = 'age' # after the code input, the age is requested
-                        if self.gamestate == 'age' and len(self.textinput.value) > 0: # ENTER to input the participant's age
-                            self.participant_age = self.textinput.value
-                            self.gamestate = 'test1' # after the age input, starts the test
+                            # gets the participant's age from the PRE register 
+                            self.participant_age =list(df_PRE.loc[df_PRE['codigo'] == str(self.participant_code)].iloc[0])[1]
+                            self.gamestate = 'test1' # after getting the participant's data, starts the test
 
             if self.gamestate == 'login': # participant code request
                 self.login_screen()
-            
-            elif self.gamestate == 'age': # participant age request
-                self.age_screen()
 
             elif self.gamestate == 'test1': # begin test1
                 app = stroopTest1(self.screen, self.screen.get_width(), self.screen.get_height(), "POST", self.participant_code, self.participant_age)
